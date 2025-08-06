@@ -1,62 +1,84 @@
-name: Build and Test
+name: Build and Release
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [ published ]
 
 jobs:
   build:
     runs-on: windows-latest
-    
+
     steps:
     - uses: actions/checkout@v4
     
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: 8.0.x
         
     - name: Restore dependencies
       run: dotnet restore src/DesktopWallpaperApp/DesktopWallpaperApp.csproj
       
     - name: Build
-      run: dotnet build src/DesktopWallpaperApp/DesktopWallpaperApp.csproj --configuration Release --no-restore
+      run: dotnet build src/DesktopWallpaperApp/DesktopWallpaperApp.csproj --no-restore --configuration Release
       
     - name: Test
-      run: dotnet test src/DesktopWallpaperApp/DesktopWallpaperApp.csproj --configuration Release --no-build --verbosity normal
-      continue-on-error: true
+      run: echo "No tests configured yet"
       
+    - name: Publish Windows x64
+      run: dotnet publish src/DesktopWallpaperApp/DesktopWallpaperApp.csproj --configuration Release --runtime win-x64 --self-contained true --output ./publish/win-x64
+      
+    - name: Publish Windows x86  
+      run: dotnet publish src/DesktopWallpaperApp/DesktopWallpaperApp.csproj --configuration Release --runtime win-x86 --self-contained true --output ./publish/win-x86
+      
+    - name: Create Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DesktopWallpaperManager-Windows
+        path: |
+          ./publish/win-x64/**
+          ./publish/win-x86/**
+          
   release:
+    if: github.event_name == 'release'
     needs: build
     runs-on: windows-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
       with:
-        dotnet-version: '8.0.x'
+        name: DesktopWallpaperManager-Windows
+        path: ./artifacts
         
-    - name: Publish Windows x64
+    - name: Create ZIP archives
       run: |
-        dotnet publish src/DesktopWallpaperApp/DesktopWallpaperApp.csproj `
-          --configuration Release `
-          --runtime win-x64 `
-          --self-contained true `
-          --output ./publish/win-x64 `
-          --property:PublishSingleFile=true `
-          --property:IncludeNativeLibrariesForSelfExtract=true
-          
-    - name: Create Release Archive
-      run: |
-        Compress-Archive -Path ./publish/win-x64/* -DestinationPath ./DesktopWallpaperApp-win-x64.zip
-        
-    - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
+        Compress-Archive -Path "./artifacts/win-x64/*" -DestinationPath "./DesktopWallpaperManager-win-x64.zip"
+        Compress-Archive -Path "./artifacts/win-x86/*" -DestinationPath "./DesktopWallpaperManager-win-x86.zip"
+      shell: pwsh
+      
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: DesktopWallpaperApp-win-x64
-        path: ./DesktopWallpaperApp-win-x64.zip
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./DesktopWallpaperManager-win-x64.zip
+        asset_name: DesktopWallpaperManager-win-x64.zip
+        asset_content_type: application/zip
+        
+    - name: Upload Release Assets x86
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./DesktopWallpaperManager-win-x86.zip
+        asset_name: DesktopWallpaperManager-win-x86.zip
+        asset_content_type: application/zip
