@@ -1,0 +1,42 @@
+<UserControl x:Class="DesktopWallpaperApp.Controls.ClockWidget"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="100" d:DesignWidth="200"
+             Background="Transparent"
+             MouseLeftButtonDown="ClockWidget_MouseLeftButtonDown"
+             MouseMove="ClockWidget_MouseMove"
+             MouseLeftButtonUp="ClockWidget_MouseLeftButtonUp">
+    
+    <UserControl.Resources>
+        <Style x:Key="ClockTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="1"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    
+    <Border Background="#80000000" CornerRadius="8" Padding="10">
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+            <TextBlock x:Name="TimeTextBlock" 
+                       Text="{Binding CurrentTime}"
+                       Style="{StaticResource ClockTextStyle}"
+                       FontSize="24"
+                       HorizontalAlignment="Center"/>
+            <TextBlock x:Name="DateTextBlock" 
+                       Text="{Binding CurrentDate}"
+                       Style="{StaticResource ClockTextStyle}"
+                       FontSize="12"
+                       HorizontalAlignment="Center"
+                       Margin="0,2,0,0"
+                       Visibility="{Binding ShowDate, Converter={x:Static BooleanToVisibilityConverter.Instance}}"/>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -1,0 +1,87 @@
+<UserControl x:Class="DesktopWallpaperApp.Controls.PomodoroWidget"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="120" d:DesignWidth="180"
+             Background="Transparent"
+             MouseLeftButtonDown="PomodoroWidget_MouseLeftButtonDown"
+             MouseMove="PomodoroWidget_MouseMove"
+             MouseLeftButtonUp="PomodoroWidget_MouseLeftButtonUp">
+    
+    <UserControl.Resources>
+        <Style x:Key="PomodoroTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="1"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="PomodoroButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#80FF4444"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#80FF6666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    
+    <Border Background="#80800000" CornerRadius="8" Padding="10">
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding StateText}"
+                       Style="{StaticResource PomodoroTextStyle}"
+                       FontSize="12"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,5"/>
+            
+            <TextBlock Text="{Binding RemainingTimeText}"
+                       Style="{StaticResource PomodoroTextStyle}"
+                       FontSize="20"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,8"/>
+            
+            <TextBlock x:Name="SessionTextBlock"
+                       Text="{Binding SessionText}"
+                       Style="{StaticResource PomodoroTextStyle}"
+                       FontSize="10"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,8"/>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="StartPauseButton"
+                        Content="{Binding StartPauseButtonText}"
+                        Style="{StaticResource PomodoroButtonStyle}"
+                        Click="StartPauseButton_Click"
+                        Margin="0,0,5,0"/>
+                <Button x:Name="StopButton"
+                        Content="停止"
+                        Style="{StaticResource PomodoroButtonStyle}"
+                        Click="StopButton_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>
