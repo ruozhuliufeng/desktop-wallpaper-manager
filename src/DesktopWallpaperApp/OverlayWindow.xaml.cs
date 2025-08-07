@@ -50,5 +50,10 @@ namespace DesktopWallpaperApp
             WidgetCanvas.Children.Clear();
             _widgets.Clear();
         }
+
+        public List<UserControl> GetWidgets()
+        {
+            return _widgets;
+        }
     }
 }

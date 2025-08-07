@@ -11,11 +11,18 @@ namespace DesktopWallpaperApp.Models
         private double _opacity = 1.0;
         private bool _isVisible = true;
         private string _id = Guid.NewGuid().ToString();
+        private string _name = "组件";
 
         public string Id
         {
             get => _id;
             set => SetProperty(ref _id, value);
+        }
+
+        public string Name
+        {
+            get => _name;
+            set => SetProperty(ref _name, value);
         }
 
         public double X
@@ -63,6 +70,11 @@ namespace DesktopWallpaperApp.Models
         private string _timeFormat = "HH:mm:ss";
         private string _dateFormat = "yyyy-MM-dd";
         private bool _showDate = true;
+
+        public ClockModel()
+        {
+            Name = "时钟组件";
+        }
 
         public string TimeFormat
         {

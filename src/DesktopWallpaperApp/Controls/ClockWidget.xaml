@@ -11,6 +11,7 @@
              MouseLeftButtonUp="ClockWidget_MouseLeftButtonUp">
     
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <Style x:Key="ClockTextStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontFamily" Value="Consolas"/>
@@ -36,7 +37,7 @@
                        FontSize="12"
                        HorizontalAlignment="Center"
                        Margin="0,2,0,0"
-                       Visibility="{Binding ShowDate, Converter={x:Static BooleanToVisibilityConverter.Instance}}"/>
+                       Visibility="{Binding ShowDate, Converter={StaticResource BooleanToVisibilityConverter}}"/>
         </StackPanel>
     </Border>
 </UserControl>

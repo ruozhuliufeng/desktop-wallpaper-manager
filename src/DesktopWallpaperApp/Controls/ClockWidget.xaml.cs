@@ -32,6 +32,7 @@ namespace DesktopWallpaperApp.Controls
         public bool ShowDate => _model?.ShowDate ?? true;
 
         public event PropertyChangedEventHandler? PropertyChanged;
+        public event EventHandler? PositionChanged;
 
         public ClockWidget()
         {
@@ -101,13 +102,24 @@ namespace DesktopWallpaperApp.Controls
                 _isDragging = false;
                 ReleaseMouseCapture();
                 e.Handled = true;
+                
+                // 通知位置变化
+                PositionChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 
         private void ShowSettings()
         {
-            // 显示设置窗口的逻辑
-            MessageBox.Show("时钟设置窗口（待实现）", "设置", MessageBoxButton.OK, MessageBoxImage.Information);
+            var settingsWindow = new Views.WidgetSettingsWindow(this, Model)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            
+            if (settingsWindow.ShowDialog() == true)
+            {
+                // 设置已保存，触发属性更改通知
+                OnPropertyChanged(nameof(Model));
+            }
         }
 
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)

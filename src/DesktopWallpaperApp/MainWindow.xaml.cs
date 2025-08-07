@@ -159,6 +159,9 @@ namespace DesktopWallpaperApp
             Canvas.SetLeft(clock, 50 + (_widgets.Count * 20));
             Canvas.SetTop(clock, 50 + (_widgets.Count * 20));
             
+            // 订阅位置变化事件
+            clock.PositionChanged += (s, e) => SyncWidgetToOverlay(clock);
+            
             WidgetCanvas.Children.Add(clock);
             _widgets.Add(clock);
             UpdateWidgetList();
@@ -168,8 +171,11 @@ namespace DesktopWallpaperApp
         private void AddPomodoroWidget()
         {
             var pomodoro = new PomodoroWidget();
-            Canvas.SetLeft(pomodoro, 50 + (_widgets.Count * 20));
+            Canvas.SetLeft(pomodoro, 200);
             Canvas.SetTop(pomodoro, 150 + (_widgets.Count * 20));
+            
+            // 订阅位置变化事件
+            pomodoro.PositionChanged += (s, e) => SyncWidgetToOverlay(pomodoro);
             
             WidgetCanvas.Children.Add(pomodoro);
             _widgets.Add(pomodoro);
@@ -184,26 +190,43 @@ namespace DesktopWallpaperApp
             {
                 string widgetType = _widgets[i] switch
                 {
-                    ClockWidget => "时钟",
-                    PomodoroWidget => "番茄时钟",
+                    ClockWidget clock => clock.Model?.Name ?? "时钟",
+                    PomodoroWidget pomodoro => pomodoro.Model?.Name ?? "番茄时钟",
                     _ => "未知组件"
                 };
                 WidgetListBox.Items.Add($"{widgetType} #{i + 1}");
             }
         }
 
+        public void RefreshWidgetList()
+        {
+            UpdateWidgetList();
+        }
+
         private void GlobalOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            foreach (var widget in _widgets)
+            if (WidgetListBox.SelectedItem is UserControl selectedWidget)
             {
-                if (widget is ClockWidget clock)
-                {
-                    clock.UpdateOpacity(e.NewValue);
-                }
-                else if (widget is PomodoroWidget pomodoro)
-                {
-                    pomodoro.UpdateOpacity(e.NewValue);
-                }
+                selectedWidget.Opacity = e.NewValue;
+                UpdateStatus($"组件透明度已设置为 {e.NewValue:F2}");
+                
+                // 同步到桌面覆盖层
+                SyncWidgetToOverlay(selectedWidget);
+            }
+        }
+
+        private void SyncWidgetToOverlay(UserControl sourceWidget)
+        {
+            if (_overlayWindow == null || !_overlayWindow.IsVisible) return;
+
+            // 找到对应的覆盖层组件并同步属性
+            var overlayWidgets = _overlayWindow.GetWidgets();
+            int sourceIndex = _widgets.IndexOf(sourceWidget);
+            
+            if (sourceIndex >= 0 && sourceIndex < overlayWidgets.Count)
+            {
+                var targetWidget = overlayWidgets[sourceIndex];
+                SyncWidgetProperties(sourceWidget, targetWidget);
             }
         }
 
@@ -227,7 +250,7 @@ namespace DesktopWallpaperApp
         {
             _overlayWindow = new OverlayWindow();
             
-            // 复制所有组件到覆盖窗口
+            // 复制所有组件到覆盖窗口并建立同步关系
             foreach (var widget in _widgets)
             {
                 UserControl clonedWidget;
@@ -236,11 +259,19 @@ namespace DesktopWallpaperApp
 
                 if (widget is ClockWidget clockWidget)
                 {
-                    clonedWidget = new ClockWidget { Model = clockWidget.Model };
+                    var overlayClockWidget = new ClockWidget { Model = clockWidget.Model };
+                    clonedWidget = overlayClockWidget;
+                    
+                    // 建立属性同步
+                    SetupWidgetSync(clockWidget, overlayClockWidget);
                 }
                 else if (widget is PomodoroWidget pomodoroWidget)
                 {
-                    clonedWidget = new PomodoroWidget { Model = pomodoroWidget.Model };
+                    var overlayPomodoroWidget = new PomodoroWidget { Model = pomodoroWidget.Model };
+                    clonedWidget = overlayPomodoroWidget;
+                    
+                    // 建立属性同步
+                    SetupWidgetSync(pomodoroWidget, overlayPomodoroWidget);
                 }
                 else
                 {
@@ -260,6 +291,47 @@ namespace DesktopWallpaperApp
         {
             _overlayWindow?.Close();
             _overlayWindow = null;
+        }
+
+        private void SetupWidgetSync(UserControl sourceWidget, UserControl targetWidget)
+        {
+            // 监听源组件的属性变化
+            if (sourceWidget is ClockWidget sourceClockWidget && targetWidget is ClockWidget targetClockWidget)
+            {
+                sourceClockWidget.Model.PropertyChanged += (s, e) =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        SyncWidgetProperties(sourceClockWidget, targetClockWidget);
+                    });
+                };
+            }
+            else if (sourceWidget is PomodoroWidget sourcePomodoroWidget && targetWidget is PomodoroWidget targetPomodoroWidget)
+            {
+                sourcePomodoroWidget.Model.PropertyChanged += (s, e) =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        SyncWidgetProperties(sourcePomodoroWidget, targetPomodoroWidget);
+                    });
+                };
+            }
+        }
+
+        private void SyncWidgetProperties(UserControl sourceWidget, UserControl targetWidget)
+        {
+            if (_overlayWindow == null || !_overlayWindow.IsVisible) return;
+
+            // 同步位置
+            double sourceX = Canvas.GetLeft(sourceWidget);
+            double sourceY = Canvas.GetTop(sourceWidget);
+            Canvas.SetLeft(targetWidget, sourceX);
+            Canvas.SetTop(targetWidget, sourceY);
+
+            // 同步透明度
+            targetWidget.Opacity = sourceWidget.Opacity;
+
+            // 同步模型数据（已经通过共享Model实现）
         }
 
         private void PreviewLayoutButton_Click(object sender, RoutedEventArgs e)
@@ -357,6 +429,16 @@ namespace DesktopWallpaperApp
                             Canvas.SetTop(widget, widgetData.Y);
                             widget.Opacity = widgetData.Opacity;
                             
+                            // 订阅位置变化事件
+                            if (widget is ClockWidget clockWidget)
+                            {
+                                clockWidget.PositionChanged += (s, e) => SyncWidgetToOverlay(clockWidget);
+                            }
+                            else if (widget is PomodoroWidget pomodoroWidget)
+                            {
+                                pomodoroWidget.PositionChanged += (s, e) => SyncWidgetToOverlay(pomodoroWidget);
+                            }
+                            
                             WidgetCanvas.Children.Add(widget);
                             _widgets.Add(widget);
                         }
@@ -403,7 +485,22 @@ namespace DesktopWallpaperApp
 
         private void WidgetListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // 这里可以添加选中组件时的高亮显示等功能
+            if (WidgetListBox.SelectedIndex >= 0 && WidgetListBox.SelectedIndex < _widgets.Count)
+            {
+                var selectedWidget = _widgets[WidgetListBox.SelectedIndex];
+                GlobalOpacitySlider.Value = selectedWidget.Opacity;
+                
+                // 高亮显示选中的组件
+                foreach (var widget in _widgets)
+                {
+                    widget.BorderBrush = widget == selectedWidget ? 
+                        System.Windows.Media.Brushes.Red : 
+                        System.Windows.Media.Brushes.Transparent;
+                    widget.BorderThickness = widget == selectedWidget ? 
+                        new Thickness(2) : 
+                        new Thickness(0);
+                }
+            }
         }
 
         protected override void OnClosed(EventArgs e)

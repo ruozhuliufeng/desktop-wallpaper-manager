@@ -23,6 +23,11 @@ namespace DesktopWallpaperApp.Models
         private TimeSpan _remainingTime = TimeSpan.FromMinutes(25);
         private bool _soundEnabled = true;
 
+        public PomodoroModel()
+        {
+            Name = "番茄时钟组件";
+        }
+
         public int WorkMinutes
         {
             get => _workMinutes;
